@@ -2,16 +2,10 @@ import pygame
 from copy import deepcopy
 from random import choice, randrange
 
-#создаем окно
+# создаем окно
 pygame.init()
-screen = pygame.display.set_mode((900, 700))
 pygame.display.set_caption("Tetris")
 FPS = 60  # число кадров в секунду
-
-# задаем окно заднего фона игры и окно игры
-bg = pygame.image.load("img/background.jpg").convert()  # загружаем изображение
-background = pygame.transform.smoothscale(bg, screen.get_size())
-bg_game = pygame.image.load("img/background.jpg").convert()
 
 # задаем параметры для дальнейшего использования в окне игры
 width, High = 10, 20
@@ -22,30 +16,38 @@ get_color = lambda: (randrange(100, 255), randrange(100, 255), randrange(100, 25
 
 # создаем прямоугольники фигур
 figures_pos = [[(-1, -1), (-2, -1), (0, -1), (1, -1)], [(0, -1), (-1, -1), (-1, 0), (0, 0)],
-               [(-1, 0), (-1, 1), (0, 0), (0, -1)], [(0, 0), (0, -1), (0, 1), (-1, 0)], [(0, 0), (0, -1), (0, 1), (-1, -1)],
+               [(-1, 0), (-1, 1), (0, 0), (0, -1)], [(0, 0), (0, -1), (0, 1), (-1, 0)],
+               [(0, 0), (0, -1), (0, 1), (-1, -1)],
                [(0, 0), (0, -1), (0, 1), (1, -1)], [(0, 0), (-1, 0), (0, 1), (-1, -1)]]
 figures = [[pygame.Rect(x + width // 2, y + 1, 1, 1) for x, y in fig_pos] for fig_pos in figures_pos]
 figure_rect = pygame.Rect(0, 0, T - 2, T - 2)
 
 # оформляем шрифт надписей сбоку на экранах
 fontObj, fontObj2 = pygame.font.SysFont('Aharoni', 80), pygame.font.SysFont('Aharoni', 140)  # задаем шрифт и его размер
-font1, font2, font3, font4 = pygame.font.SysFont('Aharoni', 70), pygame.font.SysFont('Aharoni', 45), pygame.font.SysFont('Aharoni', 30), pygame.font.SysFont('Aharoni', 50)
+font1, font2 = pygame.font.SysFont('Aharoni', 70), pygame.font.SysFont('Aharoni', 45)
+font3, font4 = pygame.font.SysFont('Aharoni', 30), pygame.font.SysFont('Aharoni', 50)
+
+
+def check_borders(one, two, map):
+    """функция проверки границ для движения фигуры по х и у
+    one - движение фигуры по х
+    two - движение фигуры по у
+    map - карта, на которой происходит движение
+    ------
+    return: True/False
+        False - выдается ошибка, если фигура заходит за границы,
+                и фигура отображается на своем предыдущем местоположении
+        True - запускает обратно бесконечный цилк из функции game
+    """
+
+    if one < 0 or one > width - 1:  # если фигура вышла за правый или левый бортик
+        return False
+    elif two > High - 1 or map[two][one]:
+        return False  # если фигура вышла за нижнюю границу или под ней лежит еще одна фигура
+    return True
 
 def pause():
-
-    """Останавливает игру.
-
-    Параметры
-    ------
-    when_pause_text: str
-    when_pause2_text: str
-            две части фразы,сообщающей пользователю, что игра остановлена
-    ------
-    keys = pygame.key.get_pressed()
-            отслеживает действия
-    ------
-    return: None
-
+    """Останавливает игру. до нажатия enter.
     """
 
     # ЗАИМСТВОВАННЫЙ КУСОК КОДА
@@ -56,22 +58,19 @@ def pause():
                 pygame.quit()
                 quit()  # ЗАИМСТВОВАННЫЙ КУСОК КОДА ЗАКОНЧИЛСЯ
         # НЕ ЗАИМСТВОВАННЫЙ КУСОК КОДА
-        when_pause_text, when_pause2_text = font2.render('To continue the game,', True, (255, 255, 255)), font2.render('press "ENTER"', True, (255, 255, 255))
+        when_pause_text, when_pause2_text = font2.render('To continue the game,', True, (255, 255, 255)), font2.render(
+            'press "ENTER"', True, (255, 255, 255))
         screen.blit(when_pause_text, [225, 200]), screen.blit(when_pause2_text, [310, 300])
         # ЗАИМСТВОВАННЫЙ КУСОК КОДА
         keys = pygame.key.get_pressed()
         if keys[pygame.K_RETURN]:  # привязываем клавишу enter
             paused = False
         pygame.display.update()  # ЗАИМСТВОВАННЫЙ КУСОК КОДА ЗАКОНЧИЛСЯ
-def get_record():
 
+def get_record():
     """Считывает значение рекорд из файла "record", в случае отсутствия этого файла он создается с изначальным значением 0
-    open - метод, который открывает файл
-        as f -для прочтения
-        as w - для замены содержимого
     ------
-    return: f.readline()
-        возвращает значение рекорда из файла
+    return: возвращает значение рекорда из файла
     """
 
     try:
@@ -80,8 +79,8 @@ def get_record():
     except FileNotFoundError:
         with open('record', 'w') as f:  # если файла нет, то мы его создаем и записываем туда начальное значение 0
             f.write('0')
-def set_record(record, score):
 
+def set_record(record, score):
     """функция для замены рекорда новым  в случае, если количество набранных очков больше, чем значение рекорда в файле "record"
 
     Параметры
@@ -90,36 +89,16 @@ def set_record(record, score):
         значение рекорда, взятое из файла "record"
     score: int
         количество очков, набраных пользователем в процессе игры
-
-    Методы
-    ------
-    rec = max(int(record), score): определяет наибольшее  из двух значений параметров
-    ------
-    return: None
     """
 
     rec = max(int(record), score)
     with open('record', 'w') as f:
         f.write(str(rec))
-def game():
 
+def game():
     """Игровой цикл, который продолжается, пока пользователь не закончит игру или не выйдет из нее."""
 
     # СОЗДАЕМ ОКНО ПРОГРАММЫ
-    def check_borders():
-
-        """функция проверки границ для движения фигуры по х и у
-        figure[i].x - движение фигуры по х
-        figure[i].y - движение фигуры по у
-        ------
-        return: None
-        """
-        
-        if figure[i].x < 0 or figure[i].x > width - 1:  # если фигура вышла за правый или левый бортик
-            return False
-        elif figure[i].y > High - 1 or map[figure[i].y][figure[i].x]:
-            return False  # если фигура вышла за нижнюю границу или под ней лежит еще одна фигура
-        return True
 
     # задаем на окне игры прямоугольник с сеткой
     grid = [pygame.Rect(x * T, y * T, T, T) for x in range(width) for y in range(High)]
@@ -153,11 +132,16 @@ def game():
             if event.type == pygame.QUIT:
                 exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:  dx = -1
-                elif event.key == pygame.K_RIGHT:  dx = 1
-                elif event.key == pygame.K_UP: rotate = True
-                elif event.key == pygame.K_DOWN:  anim_limit = 100
-                elif event.key == pygame.K_ESCAPE: pause()
+                if event.key == pygame.K_LEFT:
+                    dx = -1
+                elif event.key == pygame.K_RIGHT:
+                    dx = 1
+                elif event.key == pygame.K_UP:
+                    rotate = True
+                elif event.key == pygame.K_DOWN:
+                    anim_limit = 100
+                elif event.key == pygame.K_ESCAPE:
+                    pause()
 
         # поворот фигур
         center = figure[0]
@@ -168,16 +152,20 @@ def game():
                 y = figure[i].x - center.x
                 figure[i].x = center.x - x
                 figure[i].y = center.y + y
-                if not check_borders():
+                one = figure[i].x
+                two = figure[i].y
+                if not check_borders(one, two, map):
                     figure = deepcopy(figure_old)
                     break
-        #ЗАИМСТВОВАННЫЙ КУСОК КОДА
+        # ЗАИМСТВОВАННЫЙ КУСОК КОДА
         # движение по х
         figure_old = deepcopy(figure)
         for i in range(4):
             figure[i].x += dx
+            one = figure[i].x
+            two = figure[i].y
             # если фигура заходит за границы, мы восстанавливаем первоначальное (до границы) положение фигуры
-            if not check_borders():
+            if not check_borders(one, two, map):
                 figure = deepcopy(figure_old)
                 break
 
@@ -187,14 +175,16 @@ def game():
             anim_count = 0
             for i in range(4):
                 figure[i].y += 1
-                if not check_borders():
+                one = figure[i].x
+                two = figure[i].y
+                if not check_borders(one, two, map):
                     for i in range(4):
-                        map[figure_old[i].y][figure_old[i].x] = color   # красим клетки поля в цвет упавшей фигуры
+                        map[figure_old[i].y][figure_old[i].x] = color  # красим клетки поля в цвет упавшей фигуры
                     figure, color = next_figure, next_color
                     next_color = get_color()
                     next_figure = deepcopy(choice(figures))
                     anim_limit = 2000
-                    break #ЗАИМСТВОВАННЫЙ КУСОК ЗАКОНЧИЛСЯ
+                    break  # ЗАИМСТВОВАННЫЙ КУСОК ЗАКОНЧИЛСЯ
 
         # отображаем сгенерированные фигуры на экране игры
         for i in range(4):
@@ -218,30 +208,35 @@ def game():
         # убираем полные линии
         line, lines = High - 1, 0  # последняя линия поля
         for row in range(High - 1, -1, -1):
-            count = 0   # счетчик заполненных плиток
+            count = 0  # счетчик заполненных плиток
             for i in range(width):
-                if map[row][i]:# будем переходить на другую линию только если счетчик не полный
+                if map[row][i]:  # будем переходить на другую линию только если счетчик не полный
                     count += 1
                 map[line][i] = map[row][i]
             if count < width:  # если счетчик полный, то мы переписываем заполненную линию первой незаполненной
                 line -= 1
             else:
                 anim_speed += 1
-                lines += 1 # подсчитываем количество полных линий
+                lines += 1  # подсчитываем количество полных линий
 
         # добавляем в счетчик очков очки по количеству собранных линий
         score += scores[lines]
 
         # создаем и отрисовываем на основном экране надписи
-        tetris, score_text, record_text = font1.render('TETRIS', True, (255, 158, 0)), font2.render('Score:', True, (255, 100, 0)), font2.render('Record:', True, (255, 100, 0))
-        pause_text, pause2_text = font3.render('To stop the game,', True, (255, 255, 255)), font3.render('press "ESCAPE"', True, (255, 255, 255))
-        screen.blit(font1.render(str(score), True, pygame.Color('white')), (60, 200)), screen.blit(font1.render(record, True, pygame.Color('white')), (60, 500))
-        screen.blit(tetris, [650, 50]), screen.blit(score_text, [50, 160]), screen.blit(record_text, [50, 450]), screen.blit(pause_text, [630, 350]), screen.blit(pause2_text, [630, 400])
+        tetris, score_text, record_text = font1.render('TETRIS', True, (255, 158, 0)), font2.render('Score:', True,
+                                            (255, 100, 0)), font2.render('Record:', True, (255, 100, 0))
+        pause_text, pause2_text = font3.render('To stop the game,', True, (255, 255, 255)), font3.render(
+            'press "ESCAPE"', True, (255, 255, 255))
+        screen.blit(font1.render(str(score), True, pygame.Color('white')), (60, 200)), screen.blit(
+            font1.render(record, True, pygame.Color('white')), (60, 500))
+        screen.blit(tetris, [650, 50]), screen.blit(score_text, [50, 160]), screen.blit(record_text,
+                                                                                        [50, 450]), screen.blit(
+            pause_text, [630, 350]), screen.blit(pause2_text, [630, 400])
 
         # концовка
         for i in range(width):
             if map[0][i]:  # если какая-либо фигура достигла конца игрового поля
-                set_record(record, score) # проверяем рекорд
+                set_record(record, score)  # проверяем рекорд
                 map = [[0 for i in range(width)] for i in range(High)]  # снова очищаем игровое поле
                 anim_count, anim_speed, anim_limit = 0, 20, 2000
                 score = 0
@@ -249,31 +244,27 @@ def game():
 
         # отображаем экран с игрой на основном экране
         screen.blit(game_sc, (300, 60)), pygame.display.flip()
-def menu():
 
+def menu():
     """создаем экран меню
-    Параметры
-    ------
-    record: str
-        получает значение рекорда из файла record
-    get_record - метод получения рекорда из файла record - одна из функций
-    ------
-    return:None
     """
 
     # размещаем надписи
     bg = pygame.image.load("img/tetris.jpg").convert()  # загружаем изображение
-    background = pygame.transform.smoothscale(bg, screen.get_size())  # подгоняем изображение под размер экрана, создаем поверхность изобр
+    # подгоняем изображение под размер экрана, создаем поверхность изобр
+    background = pygame.transform.smoothscale(bg,screen.get_size())
     text1 = fontObj.render('Welcome', True, (255, 0, 0))  # задаем надпись,сглаженность и цвет
     text2 = fontObj.render('to ', True, (255, 100, 0))
     text3 = fontObj2.render('Tetris ', True, (255, 230, 0))
-    menu1_text, menu2_text, menu3_text = font4.render('PRESS', True, (0, 0, 255)), font4.render('Record:', True, (255, 0, 255)), font4.render('"ENTER"', True, (0, 255, 0))
+    menu1_text, menu2_text, menu3_text = font4.render('PRESS', True, (0, 0, 255)), font4.render('Record:', True, (
+    255, 0, 255)), font4.render('"ENTER"', True, (0, 255, 0))
 
     record = get_record()
 
     while True:
         # отображаем текст на экране
-        screen.blit(background, (0,0))  # на поверхности экрана отображаем поверхность с содержимым картинки,blit - оператор переноса на поверхность
+        # на поверхности экрана отображаем поверхность с содержимым картинки,blit - оператор переноса на поверхность
+        screen.blit(background, (0,0))
         screen.blit(text1, [30, 20])  # размещаем текст на окне меню
         screen.blit(text2, [170, 110])
         screen.blit(text3, [30, 200])
@@ -290,6 +281,10 @@ def menu():
 
         pygame.display.flip()
 
-
 if __name__ == "__main__":
+    # задаем окно заднего фона игры и окно игры
+    screen = pygame.display.set_mode((900, 700))
+    bg = pygame.image.load("img/background.jpg").convert()  # загружаем изображение
+    background = pygame.transform.smoothscale(bg, screen.get_size())
+    bg_game = pygame.image.load("img/background.jpg").convert()
     menu()
