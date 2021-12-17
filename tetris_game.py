@@ -22,8 +22,8 @@ get_color = lambda: (randrange(100, 255), randrange(100, 255), randrange(100, 25
 
 # создаем прямоугольники фигур
 figures_pos = [[(-1, -1), (-2, -1), (0, -1), (1, -1)], [(0, -1), (-1, -1), (-1, 0), (0, 0)],
-               [(-1, 0), (-1, 1), (0, 0), (0, -1)],[(0, 0), (0, -1), (0, 1), (-1, 0)], [(0, 0), (0, -1), (0, 1), (-1, -1)],
-               [(0, 0), (0, -1), (0, 1), (1, -1)],[(0, 0), (-1, 0), (0, 1), (-1, -1)]]
+               [(-1, 0), (-1, 1), (0, 0), (0, -1)], [(0, 0), (0, -1), (0, 1), (-1, 0)], [(0, 0), (0, -1), (0, 1), (-1, -1)],
+               [(0, 0), (0, -1), (0, 1), (1, -1)], [(0, 0), (-1, 0), (0, 1), (-1, -1)]]
 figures = [[pygame.Rect(x + width // 2, y + 1, 1, 1) for x, y in fig_pos] for fig_pos in figures_pos]
 figure_rect = pygame.Rect(0, 0, T - 2, T - 2)
 
@@ -40,8 +40,11 @@ def pause():
     when_pause_text: str
     when_pause2_text: str
             две части фразы,сообщающей пользователю, что игра остановлена
+    ------
     keys = pygame.key.get_pressed()
             отслеживает действия
+    ------
+    return: None
 
     """
 
@@ -66,6 +69,9 @@ def get_record():
     open - метод, который открывает файл
         as f -для прочтения
         as w - для замены содержимого
+    ------
+    return: f.readline()
+        возвращает значение рекорда из файла
     """
 
     try:
@@ -88,6 +94,8 @@ def set_record(record, score):
     Методы
     ------
     rec = max(int(record), score): определяет наибольшее  из двух значений параметров
+    ------
+    return: None
     """
 
     rec = max(int(record), score)
@@ -103,6 +111,8 @@ def game():
         """функция проверки границ для движения фигуры по х и у
         figure[i].x - движение фигуры по х
         figure[i].y - движение фигуры по у
+        ------
+        return: None
         """
         
         if figure[i].x < 0 or figure[i].x > width - 1:  # если фигура вышла за правый или левый бортик
@@ -147,10 +157,7 @@ def game():
                 elif event.key == pygame.K_RIGHT:  dx = 1
                 elif event.key == pygame.K_UP: rotate = True
                 elif event.key == pygame.K_DOWN:  anim_limit = 100
-
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:
-            pause()
+                elif event.key == pygame.K_ESCAPE: pause()
 
         # поворот фигур
         center = figure[0]
@@ -164,7 +171,7 @@ def game():
                 if not check_borders():
                     figure = deepcopy(figure_old)
                     break
-
+        #ЗАИМСТВОВАННЫЙ КУСОК КОДА
         # движение по х
         figure_old = deepcopy(figure)
         for i in range(4):
@@ -187,7 +194,7 @@ def game():
                     next_color = get_color()
                     next_figure = deepcopy(choice(figures))
                     anim_limit = 2000
-                    break
+                    break #ЗАИМСТВОВАННЫЙ КУСОК ЗАКОНЧИЛСЯ
 
         # отображаем сгенерированные фигуры на экране игры
         for i in range(4):
@@ -250,6 +257,8 @@ def menu():
     record: str
         получает значение рекорда из файла record
     get_record - метод получения рекорда из файла record - одна из функций
+    ------
+    return:None
     """
 
     # размещаем надписи
