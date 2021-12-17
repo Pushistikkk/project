@@ -1,7 +1,6 @@
 import unittest
-from tetris_game import get_record, set_record
+from tetris_game import get_record, set_record, check_borders
 import os
-
 
 class Test_Get_Records(unittest.TestCase):
     """тесты для функции получения рекорда"""
@@ -80,6 +79,17 @@ class Test_Set_Records(unittest.TestCase):
         self.assertEqual(get, record)
         self.assertEqual(get, score)
 
+class Test_Check_Borders(unittest.TestCase):
+    """Тесты для функции проверки границ"""
+    def test_check_borders(self):
+        check1 = check_borders(10, 18, map)  # если по х зашел за правую границу, а по у нет
+        self.assertEqual(check1, False)
+        check2 = check_borders(-1, 18, map)  # если по х зашел за левую границу, а по у нет
+        self.assertEqual(check2, False)
+        check3 = check_borders(8, 20, map)  # если по у достиг дна, а по х не зашел за границы
+        self.assertEqual(check3, False)
+        check4 = check_borders(10, 20, map)  # если зашел за границу по х и достиг дна по у
+        self.assertEqual(check4, False)
 
 if __name__ == "__main__":
     unittest.main()
